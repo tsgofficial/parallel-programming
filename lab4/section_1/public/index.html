@@ -1,0 +1,1144 @@
+<!doctype html>
+<html lang="mn">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Distributed System Dashboard</title>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap");
+
+      :root {
+        --bg: #0d0f14;
+        --surface: #161a23;
+        --border: #252b38;
+        --border2: #2f3848;
+        --text: #c8d0e0;
+        --muted: #4a5568;
+        --accent: #3b82f6;
+        --green: #22c55e;
+        --red: #ef4444;
+        --yellow: #f59e0b;
+        --purple: #a855f7;
+        --mono: "IBM Plex Mono", monospace;
+        --sans: "IBM Plex Sans", sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        background: var(--bg);
+        color: var(--text);
+        font-family: var(--sans);
+        font-size: 13px;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+
+      /* ── Header ── */
+      header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 14px 24px;
+        border-bottom: 1px solid var(--border);
+        background: var(--surface);
+      }
+      header h1 {
+        font-family: var(--mono);
+        font-size: 13px;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      header h1 span.dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: var(--green);
+        box-shadow: 0 0 6px var(--green);
+        animation: pulse 2s ease-in-out infinite;
+      }
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.4;
+        }
+      }
+      .header-sub {
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--muted);
+        letter-spacing: 0.06em;
+      }
+
+      /* ── Layout ── */
+      .main {
+        display: grid;
+        grid-template-columns: 300px 1fr;
+        grid-template-rows: auto 1fr;
+        gap: 0;
+        flex: 1;
+        overflow: hidden;
+      }
+
+      /* ── Panels ── */
+      .panel {
+        border-right: 1px solid var(--border);
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        flex-direction: column;
+      }
+      .panel-title {
+        font-family: var(--mono);
+        font-size: 10px;
+        font-weight: 600;
+        letter-spacing: 0.12em;
+        color: var(--muted);
+        text-transform: uppercase;
+        padding: 10px 16px;
+        border-bottom: 1px solid var(--border);
+        background: rgba(255, 255, 255, 0.02);
+      }
+
+      /* ── Server Cards ── */
+      #servers-panel {
+        grid-column: 1;
+        grid-row: 1;
+      }
+      .server-cards {
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+      }
+      .server-card {
+        padding: 16px;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        transition: background 0.15s;
+      }
+      .server-card:hover {
+        background: rgba(255, 255, 255, 0.02);
+      }
+      .server-info {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex: 1;
+      }
+      .server-indicator {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        flex-shrink: 0;
+        transition: all 0.3s;
+      }
+      .server-indicator.on {
+        background: var(--green);
+        box-shadow: 0 0 8px var(--green);
+      }
+      .server-indicator.off {
+        background: var(--muted);
+        box-shadow: none;
+      }
+      .server-name {
+        font-family: var(--mono);
+        font-size: 13px;
+        font-weight: 600;
+        color: #fff;
+      }
+      .server-meta {
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--muted);
+      }
+      .server-meta span {
+        color: var(--text);
+      }
+      .btn {
+        font-family: var(--mono);
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        padding: 6px 12px;
+        border-radius: 4px;
+        border: 1px solid transparent;
+        cursor: pointer;
+        transition: all 0.15s;
+        white-space: nowrap;
+      }
+      .btn-stop {
+        background: rgba(239, 68, 68, 0.12);
+        color: var(--red);
+        border-color: rgba(239, 68, 68, 0.3);
+      }
+      .btn-start {
+        background: rgba(34, 197, 94, 0.12);
+        color: var(--green);
+        border-color: rgba(34, 197, 94, 0.3);
+      }
+      .btn-stop:hover {
+        background: rgba(239, 68, 68, 0.25);
+      }
+      .btn-start:hover {
+        background: rgba(34, 197, 94, 0.25);
+      }
+      .btn-send {
+        background: var(--accent);
+        color: #fff;
+        border-color: var(--accent);
+        padding: 8px 18px;
+        font-size: 12px;
+      }
+      .btn-send:hover {
+        background: #2563eb;
+      }
+      .btn-add {
+        background: rgba(59, 130, 246, 0.12);
+        color: var(--accent);
+        border-color: rgba(59, 130, 246, 0.3);
+        padding: 7px 14px;
+      }
+      .btn-add:hover {
+        background: rgba(59, 130, 246, 0.22);
+      }
+      .btn-remove {
+        background: none;
+        color: var(--muted);
+        border: none;
+        padding: 3px 6px;
+        font-size: 14px;
+        line-height: 1;
+      }
+      .btn-remove:hover {
+        color: var(--red);
+      }
+      .btn-clear {
+        background: none;
+        color: var(--muted);
+        border: 1px solid var(--border2);
+        padding: 4px 10px;
+        font-size: 10px;
+      }
+      .btn-clear:hover {
+        color: var(--text);
+        border-color: var(--muted);
+      }
+
+      /* ── Client Panel ── */
+      #clients-panel {
+        grid-column: 1;
+        grid-row: 2;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+      }
+      .client-add-row {
+        display: flex;
+        gap: 8px;
+        padding: 12px 16px;
+        border-bottom: 1px solid var(--border);
+        align-items: center;
+      }
+      .client-add-row input {
+        width: 60px;
+        background: var(--bg);
+        border: 1px solid var(--border2);
+        color: var(--text);
+        font-family: var(--mono);
+        font-size: 12px;
+        padding: 7px 10px;
+        border-radius: 4px;
+        outline: none;
+      }
+      .client-add-row input:focus {
+        border-color: var(--accent);
+      }
+      .client-add-row label {
+        font-size: 11px;
+        color: var(--muted);
+        font-family: var(--mono);
+        flex: 1;
+      }
+      .client-list {
+        flex: 1;
+        overflow-y: auto;
+        scrollbar-width: thin;
+        scrollbar-color: var(--border2) transparent;
+      }
+      .client-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 9px 16px;
+        border-bottom: 1px solid var(--border);
+        transition: background 0.12s;
+      }
+      .client-item:hover {
+        background: rgba(255, 255, 255, 0.02);
+      }
+      .client-status-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        flex-shrink: 0;
+      }
+      .status-connected {
+        background: var(--green);
+        box-shadow: 0 0 5px var(--green);
+      }
+      .status-reconnecting {
+        background: var(--yellow);
+        animation: pulse 1s infinite;
+      }
+      .status-connecting {
+        background: var(--yellow);
+        animation: pulse 1s infinite;
+      }
+      .status-no-server {
+        background: var(--red);
+      }
+      .status-disconnected {
+        background: var(--muted);
+      }
+      .client-num {
+        font-family: var(--mono);
+        font-size: 12px;
+        font-weight: 600;
+        color: #fff;
+        width: 20px;
+      }
+      .client-tags {
+        flex: 1;
+        display: flex;
+        gap: 5px;
+      }
+      .tag {
+        font-family: var(--mono);
+        font-size: 10px;
+        padding: 2px 6px;
+        border-radius: 3px;
+        letter-spacing: 0.04em;
+      }
+      .tag-assigned {
+        background: rgba(168, 85, 247, 0.15);
+        color: var(--purple);
+        border: 1px solid rgba(168, 85, 247, 0.25);
+      }
+      .tag-connected {
+        background: rgba(34, 197, 94, 0.12);
+        color: var(--green);
+        border: 1px solid rgba(34, 197, 94, 0.2);
+      }
+      .tag-fallback {
+        background: rgba(245, 158, 11, 0.12);
+        color: var(--yellow);
+        border: 1px solid rgba(245, 158, 11, 0.25);
+      }
+      .tag-offline {
+        background: rgba(239, 68, 68, 0.1);
+        color: var(--red);
+        border: 1px solid rgba(239, 68, 68, 0.2);
+      }
+      .client-status-text {
+        font-family: var(--mono);
+        font-size: 10px;
+        color: var(--muted);
+        width: 72px;
+      }
+
+      /* ── Right Column: Message + Log ── */
+      #right-column {
+        grid-column: 2;
+        grid-row: 1 / 3;
+        display: flex;
+        flex-direction: column;
+        border-right: none;
+      }
+
+      /* Send message */
+      #send-panel {
+        border-bottom: 1px solid var(--border);
+      }
+      .send-form {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        padding: 14px 20px;
+      }
+      .send-form label {
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--muted);
+        white-space: nowrap;
+      }
+      .send-form select {
+        background: var(--bg);
+        border: 1px solid var(--border2);
+        color: var(--text);
+        font-family: var(--mono);
+        font-size: 12px;
+        padding: 8px 10px;
+        border-radius: 4px;
+        outline: none;
+        min-width: 120px;
+      }
+      .send-form select:focus {
+        border-color: var(--accent);
+      }
+      .send-form input[type="text"] {
+        flex: 1;
+        background: var(--bg);
+        border: 1px solid var(--border2);
+        color: var(--text);
+        font-family: var(--mono);
+        font-size: 12px;
+        padding: 8px 12px;
+        border-radius: 4px;
+        outline: none;
+      }
+      .send-form input[type="text"]:focus {
+        border-color: var(--accent);
+      }
+      .send-form input::placeholder {
+        color: var(--muted);
+      }
+
+      /* Error toast */
+      #error-toast {
+        display: none;
+        margin: 0 20px 10px;
+        background: rgba(239, 68, 68, 0.12);
+        border: 1px solid rgba(239, 68, 68, 0.3);
+        color: var(--red);
+        font-family: var(--mono);
+        font-size: 11px;
+        padding: 8px 12px;
+        border-radius: 4px;
+      }
+
+      /* Log panel */
+      #log-panel {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        border-bottom: none;
+      }
+      .log-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px 20px;
+        border-bottom: 1px solid var(--border);
+        background: rgba(255, 255, 255, 0.02);
+      }
+      .log-header span {
+        font-family: var(--mono);
+        font-size: 10px;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--muted);
+        font-weight: 600;
+      }
+      #log-list {
+        flex: 1;
+        overflow-y: auto;
+        padding: 8px 0;
+        font-family: var(--mono);
+        font-size: 12px;
+        scrollbar-width: thin;
+        scrollbar-color: var(--border2) transparent;
+      }
+      .log-entry {
+        display: flex;
+        gap: 12px;
+        align-items: baseline;
+        padding: 5px 20px;
+        transition: background 0.1s;
+        line-height: 1.5;
+      }
+      .log-entry:hover {
+        background: rgba(255, 255, 255, 0.025);
+      }
+      .log-ts {
+        color: var(--muted);
+        font-size: 10px;
+        flex-shrink: 0;
+        width: 70px;
+      }
+      .log-icon {
+        flex-shrink: 0;
+        width: 16px;
+        text-align: center;
+        font-size: 11px;
+      }
+      .log-text {
+        color: var(--text);
+        flex: 1;
+        word-break: break-all;
+      }
+      .log-text em {
+        font-style: normal;
+        color: var(--accent);
+      }
+      .log-text strong {
+        color: #fff;
+        font-weight: 600;
+      }
+
+      .log-entry.type-message .log-text {
+        color: #fff;
+      }
+      .log-entry.type-message .log-text em {
+        color: var(--green);
+      }
+      .log-entry.type-server .log-text {
+        color: var(--yellow);
+      }
+      .log-entry.type-fault .log-text {
+        color: var(--red);
+      }
+      .log-entry.type-join .log-text {
+        color: var(--green);
+      }
+      .log-entry.type-leave .log-text {
+        color: var(--muted);
+      }
+
+      /* Client inspector */
+      #inspect-panel {
+        border-bottom: 1px solid var(--border);
+        max-height: 230px;
+        display: flex;
+        flex-direction: column;
+      }
+      .inspect-controls {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        padding: 10px 20px;
+        border-bottom: 1px solid var(--border);
+      }
+      .inspect-controls label {
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--muted);
+      }
+      .inspect-controls select {
+        background: var(--bg);
+        border: 1px solid var(--border2);
+        color: var(--text);
+        font-family: var(--mono);
+        font-size: 12px;
+        padding: 6px 10px;
+        border-radius: 4px;
+        outline: none;
+        min-width: 200px;
+      }
+      #inspect-list {
+        flex: 1;
+        overflow-y: auto;
+        font-family: var(--mono);
+        font-size: 11px;
+        padding: 8px 0;
+      }
+      .inspect-entry {
+        display: grid;
+        grid-template-columns: 60px 56px 56px 1fr;
+        gap: 8px;
+        padding: 5px 20px;
+        align-items: center;
+        line-height: 1.4;
+      }
+      .inspect-entry .inspect-ts {
+        color: var(--muted);
+      }
+      .inspect-badge {
+        font-size: 10px;
+        padding: 2px 6px;
+        border-radius: 3px;
+        text-align: center;
+        border: 1px solid transparent;
+      }
+      .inspect-public {
+        color: var(--green);
+        border-color: rgba(34, 197, 94, 0.35);
+        background: rgba(34, 197, 94, 0.12);
+      }
+      .inspect-dir {
+        color: var(--accent);
+      }
+      .inspect-msg {
+        color: #fff;
+        word-break: break-word;
+      }
+
+      /* Empty state */
+      .empty {
+        padding: 20px 16px;
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--muted);
+        text-align: center;
+      }
+
+      /* Scrollbar */
+      ::-webkit-scrollbar {
+        width: 4px;
+      }
+      ::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: var(--border2);
+        border-radius: 2px;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>
+        <span class="dot"></span>
+        DISTRIBUTED SYSTEM DASHBOARD
+      </h1>
+      <div class="header-sub">
+        SERVER A :8001 &nbsp;·&nbsp; SERVER B :8002 &nbsp;·&nbsp; DASHBOARD
+        :3000
+      </div>
+    </header>
+
+    <div class="main">
+      <!-- ── Left: Servers ── -->
+      <div class="panel" id="servers-panel">
+        <div class="panel-title">Серверүүд</div>
+        <div class="server-cards">
+          <div class="server-card" id="card-A">
+            <div class="server-info">
+              <div class="server-indicator off" id="ind-A"></div>
+              <div>
+                <div class="server-name">Server A</div>
+                <div class="server-meta">
+                  :8001 &nbsp;·&nbsp; клиент: <span id="cnt-A">0</span>
+                </div>
+              </div>
+            </div>
+            <button
+              class="btn btn-start"
+              id="btn-A"
+              onclick="toggleServer('A')"
+            >
+              START
+            </button>
+          </div>
+
+          <div class="server-card" id="card-B">
+            <div class="server-info">
+              <div class="server-indicator off" id="ind-B"></div>
+              <div>
+                <div class="server-name">Server B</div>
+                <div class="server-meta">
+                  :8002 &nbsp;·&nbsp; клиент: <span id="cnt-B">0</span>
+                </div>
+              </div>
+            </div>
+            <button
+              class="btn btn-start"
+              id="btn-B"
+              onclick="toggleServer('B')"
+            >
+              START
+            </button>
+          </div>
+
+          <!-- Load balancing info -->
+          <div
+            style="padding: 12px 16px; border-bottom: 1px solid var(--border)"
+          >
+            <div
+              style="
+                font-family: var(--mono);
+                font-size: 10px;
+                color: var(--muted);
+                margin-bottom: 6px;
+                letter-spacing: 0.08em;
+              "
+            >
+              LOAD BALANCING
+            </div>
+            <div
+              style="
+                font-family: var(--mono);
+                font-size: 11px;
+                color: var(--text);
+                line-height: 1.8;
+              "
+            >
+              Тэгш дугаар (2,4,6…) → Server A<br />
+              Сондгой дугаар (1,3,5…) → Server B
+            </div>
+          </div>
+
+          <div style="padding: 12px 16px">
+            <div
+              style="
+                font-family: var(--mono);
+                font-size: 10px;
+                color: var(--muted);
+                margin-bottom: 6px;
+                letter-spacing: 0.08em;
+              "
+            >
+              FAULT TOLERANCE
+            </div>
+            <div
+              style="
+                font-family: var(--mono);
+                font-size: 11px;
+                color: var(--text);
+                line-height: 1.8;
+              "
+            >
+              A зогсвол → клиентүүд B рүү<br />
+              A эргэж асвал → буцаж холбогдно
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Left bottom: Clients ── -->
+      <div class="panel" id="clients-panel">
+        <div class="panel-title">Клиентүүд</div>
+        <div class="client-add-row">
+          <label>Дугаар:</label>
+          <input
+            type="number"
+            id="client-num-input"
+            min="1"
+            max="99"
+            value="1"
+            onkeydown="if (event.key === 'Enter') addClient();"
+          />
+          <button class="btn btn-add" onclick="addClient()">+ Нэмэх</button>
+        </div>
+        <div class="client-list" id="client-list">
+          <div class="empty" id="no-clients">Клиент байхгүй байна</div>
+        </div>
+      </div>
+
+      <!-- ── Right: Send + Log ── -->
+      <div id="right-column">
+        <div id="send-panel">
+          <div class="panel-title">Мессеж илгээх</div>
+          <div id="error-toast"></div>
+          <div class="send-form">
+            <label>Илгээгч:</label>
+            <select id="from-select">
+              <option value="">— сонгох —</option>
+            </select>
+            <input
+              type="text"
+              id="msg-input"
+              placeholder="Мессеж бичнэ үү..."
+              onkeydown="if (event.key === 'Enter') sendMessage();"
+            />
+            <button class="btn btn-send" onclick="sendMessage()">
+              Илгээх ↑
+            </button>
+          </div>
+        </div>
+
+        <div id="inspect-panel">
+          <div class="panel-title">Client Message Inspector</div>
+          <div class="inspect-controls">
+            <label>Клиент:</label>
+            <select id="inspect-client-select" onchange="renderInspector()">
+              <option value="">— сонгох —</option>
+            </select>
+          </div>
+          <div id="inspect-list">
+            <div class="empty">Клиент сонгоно уу</div>
+          </div>
+        </div>
+
+        <div id="log-panel">
+          <div class="log-header">
+            <span>Activity Log</span>
+            <button class="btn btn-clear" onclick="clearLogs()">
+              Цэвэрлэх
+            </button>
+          </div>
+          <div id="log-list"></div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // ── State ──────────────────────────────────────────────────────────────────
+      let state = {
+        servers: { A: {}, B: {} },
+        clients: [],
+        logs: [],
+        messages: [],
+      };
+      let isFromSelectorFocused = false;
+      let fromOptionsKey = "";
+      let isInspectSelectorFocused = false;
+      let inspectOptionsKey = "";
+
+      async function fetchState() {
+        try {
+          const res = await fetch("/api/state");
+          const data = await res.json();
+          if (!data.ok) {
+            showError(data.error || "Төлөв ачаалж чадсангүй");
+            return;
+          }
+          state = data.state;
+          renderAll();
+        } catch {
+          showError("Сервертэй холбогдож чадсангүй");
+        }
+      }
+
+      async function postApi(url, payload = {}) {
+        try {
+          const res = await fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+          const data = await res.json();
+          if (!res.ok || !data.ok) {
+            showError(data.error || "Үйлдэл амжилтгүй");
+            return false;
+          }
+          state = data.state;
+          renderAll();
+          hideError();
+          return true;
+        } catch {
+          showError("Сервертэй холбогдож чадсангүй");
+          return false;
+        }
+      }
+
+      // ── Render ─────────────────────────────────────────────────────────────────
+      function renderAll() {
+        renderServers();
+        renderClients();
+        renderInspector();
+        renderLogs();
+      }
+
+      function renderServers() {
+        ["A", "B"].forEach((name) => {
+          const s = state.servers[name];
+          const ind = document.getElementById(`ind-${name}`);
+          const btn = document.getElementById(`btn-${name}`);
+          const cnt = document.getElementById(`cnt-${name}`);
+
+          ind.className = `server-indicator ${s.running ? "on" : "off"}`;
+          btn.textContent = s.running ? "STOP" : "START";
+          btn.className = `btn ${s.running ? "btn-stop" : "btn-start"}`;
+          cnt.textContent = s.clients || 0;
+        });
+      }
+
+      function renderClients() {
+        const list = document.getElementById("client-list");
+
+        if (state.clients.length === 0) {
+          list.innerHTML =
+            '<div class="empty" id="no-clients">Клиент байхгүй байна</div>';
+        } else {
+          list.innerHTML = state.clients
+            .map(
+              (c) => `
+      <div class="client-item" id="ci-${c.num}">
+        <div class="client-status-dot ${statusClass(c.status)}"></div>
+        <div class="client-num">${c.num}</div>
+        <div class="client-tags">
+          <span class="tag tag-assigned">→ ${c.assignedServer}</span>
+          ${
+            c.connectedServer
+              ? `<span class="tag ${c.connectedServer === c.assignedServer ? "tag-connected" : "tag-fallback"}">
+                 ${c.connectedServer === c.assignedServer ? "✓" : "⚡"} Srv ${c.connectedServer}
+               </span>`
+              : `<span class="tag tag-offline">${statusLabel(c.status)}</span>`
+          }
+        </div>
+        <div class="client-status-text">${statusLabel(c.status)}</div>
+        <button class="btn btn-remove" onclick="removeClient(${c.num})">✕</button>
+      </div>
+    `,
+            )
+            .join("");
+        }
+
+        syncFromSelector();
+        syncInspectSelector();
+      }
+
+      // Native <select> dropdowns close if their <option>s are rebuilt while open.
+      // Skip the rebuild when the user has the dropdown focused, and skip when
+      // the option set hasn't actually changed.
+      function syncFromSelector(force = false) {
+        const fromSel = document.getElementById("from-select");
+        const connected = state.clients.filter((c) => c.status === "connected");
+        const key = connected
+          .map((c) => `${c.num}:${c.connectedServer}`)
+          .join(",");
+
+        if (!force && isFromSelectorFocused) return;
+        if (!force && key === fromOptionsKey) return;
+
+        const prev = fromSel.value;
+        fromOptionsKey = key;
+
+        fromSel.innerHTML =
+          '<option value="">— сонгох —</option>' +
+          connected
+            .map(
+              (c) =>
+                `<option value="${c.num}">Client ${c.num} (Server ${c.connectedServer})</option>`,
+            )
+            .join("");
+
+        if (connected.some((c) => String(c.num) === String(prev))) {
+          fromSel.value = prev;
+        }
+      }
+
+      function syncInspectSelector(force = false) {
+        const inspectSel = document.getElementById("inspect-client-select");
+        const key = state.clients.map((c) => c.num).join(",");
+
+        if (!force && isInspectSelectorFocused) return;
+        if (!force && key === inspectOptionsKey) return;
+
+        const prevInspect = inspectSel.value;
+        inspectOptionsKey = key;
+
+        inspectSel.innerHTML =
+          '<option value="">— сонгох —</option>' +
+          state.clients
+            .map((c) => `<option value="${c.num}">Client ${c.num}</option>`)
+            .join("");
+
+        if (state.clients.some((c) => String(c.num) === String(prevInspect))) {
+          inspectSel.value = prevInspect;
+        }
+      }
+
+      function renderInspector() {
+        const inspectList = document.getElementById("inspect-list");
+        const selected = parseInt(
+          document.getElementById("inspect-client-select").value,
+        );
+
+        if (!selected) {
+          inspectList.innerHTML = '<div class="empty">Клиент сонгоно уу</div>';
+          return;
+        }
+
+        const items = (state.messages || [])
+          .filter((e) => {
+            if (e.from === selected) return true;
+            return (
+              Array.isArray(e.recipients) && e.recipients.includes(selected)
+            );
+          })
+          .slice(0, 50);
+
+        if (items.length === 0) {
+          inspectList.innerHTML =
+            '<div class="empty">Энэ клиенттэй холбоотой мессеж алга</div>';
+          return;
+        }
+
+        inspectList.innerHTML = items
+          .map((e) => {
+            const dir = e.from === selected ? "→ all" : `← ${e.from}`;
+            return `<div class="inspect-entry">
+          <span class="inspect-ts">${e.ts || "--:--:--"}</span>
+          <span class="inspect-badge inspect-public">PUBLIC</span>
+          <span class="inspect-dir">${dir}</span>
+          <span class="inspect-msg">${escapeHtml(e.message || "")}</span>
+        </div>`;
+          })
+          .join("");
+      }
+
+      function escapeHtml(text) {
+        return String(text)
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#39;");
+      }
+
+      function renderLogs() {
+        const list = document.getElementById("log-list");
+        if (!state.logs || state.logs.length === 0) {
+          list.innerHTML = '<div class="empty">Лог хоосон байна</div>';
+          return;
+        }
+        list.innerHTML = state.logs
+          .map((entry) => logEntryHTML(entry))
+          .join("");
+      }
+
+      function logEntryHTML(entry) {
+        const icons = {
+          message: "💬",
+          server: "⚡",
+          fault: "🔴",
+          join: "🟢",
+          leave: "⚫",
+          warn: "⚠️",
+        };
+        const icon = icons[entry.type] || "·";
+        let text = entry.text;
+
+        // Highlight client numbers and server names
+        text = text.replace(/Client (\d+)/g, "Client <strong>$1</strong>");
+        text = text.replace(/Server ([AB])/g, "Server <em>$1</em>");
+
+        return `<div class="log-entry type-${entry.type}">
+      <span class="log-ts">${entry.ts}</span>
+      <span class="log-icon">${icon}</span>
+      <span class="log-text">${text}</span>
+    </div>`;
+      }
+
+      function statusClass(s) {
+        return (
+          {
+            connected: "status-connected",
+            reconnecting: "status-reconnecting",
+            connecting: "status-connecting",
+            "no-server": "status-no-server",
+            disconnected: "status-disconnected",
+          }[s] || "status-disconnected"
+        );
+      }
+
+      function statusLabel(s) {
+        return (
+          {
+            connected: "холбогдсон",
+            reconnecting: "холбогдож…",
+            connecting: "холбогдож…",
+            "no-server": "сервер алга",
+            disconnected: "салгагдсан",
+          }[s] || s
+        );
+      }
+
+      // ── Actions ────────────────────────────────────────────────────────────────
+      function toggleServer(name) {
+        postApi("/api/server/toggle", { name });
+      }
+
+      function addClient() {
+        const input = document.getElementById("client-num-input");
+        const num = parseInt(input.value);
+        if (!num || num < 1 || num > 99) {
+          showError("1–99 хооронд тоо оруулна уу");
+          return;
+        }
+        postApi("/api/clients/add", { num });
+        input.value = (num % 99) + 1; // auto-increment for convenience
+      }
+
+      function removeClient(num) {
+        postApi("/api/clients/remove", { num });
+      }
+
+      function sendMessage() {
+        const from = document.getElementById("from-select").value;
+        const input = document.getElementById("msg-input");
+        const message = input.value.trim();
+
+        if (!from) {
+          showError("Илгээгч клиентийг сонгоно уу");
+          return;
+        }
+        if (!message) {
+          showError("Мессеж хоосон байна");
+          return;
+        }
+
+        postApi("/api/messages/send", {
+          from: parseInt(from),
+          message,
+        }).then((ok) => {
+          if (ok) input.value = "";
+        });
+      }
+
+      function clearLogs() {
+        postApi("/api/logs/clear");
+      }
+
+      // ── Error toast ────────────────────────────────────────────────────────────
+      let errorTimer;
+      function showError(msg) {
+        const toast = document.getElementById("error-toast");
+        toast.textContent = "⚠  " + msg;
+        toast.style.display = "block";
+        clearTimeout(errorTimer);
+        errorTimer = setTimeout(hideError, 3000);
+      }
+      function hideError() {
+        document.getElementById("error-toast").style.display = "none";
+      }
+
+      // Initial load + polling
+      fetchState();
+      setInterval(fetchState, 1000);
+
+      function trackSelectorFocus(id, setFocused, syncFn) {
+        const el = document.getElementById(id);
+        // mousedown fires before the native dropdown opens — covers the case
+        // where focus event doesn't fire reliably for clicks on <select>.
+        el.addEventListener("mousedown", () => setFocused(true));
+        el.addEventListener("focus", () => setFocused(true));
+        el.addEventListener("blur", () => {
+          setFocused(false);
+          syncFn(true);
+        });
+        el.addEventListener("change", () => {
+          setFocused(false);
+          syncFn(true);
+        });
+      }
+
+      trackSelectorFocus(
+        "from-select",
+        (v) => (isFromSelectorFocused = v),
+        syncFromSelector,
+      );
+      trackSelectorFocus(
+        "inspect-client-select",
+        (v) => (isInspectSelectorFocused = v),
+        syncInspectSelector,
+      );
+    </script>
+  </body>
+</html>
